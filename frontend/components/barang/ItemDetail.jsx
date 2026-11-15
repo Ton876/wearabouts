@@ -12,11 +12,14 @@ import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import { CATEGORIES, CONDITIONS } from "@/lib/config";
 import WishlistButton from "./WishlistButton";
 import ItemReviews from "./ItemReviews";
+import { useAuth } from "@/lib/auth";
 import { getItem } from "@/lib/items";
 import { formatIDR, tagNumber } from "@/lib/format";
 
 export default function ItemDetail() {
   const { id } = useParams();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [item, setItem] = useState(null);
   const [error, setError] = useState("");
 
@@ -101,7 +104,11 @@ export default function ItemDetail() {
           )}
 
           <div className="flex flex-wrap gap-3">
-            {sold ? (
+            {isAdmin ? (
+              <Button href="/admin" variant="secondary" className="min-w-44">
+                Manage in admin
+              </Button>
+            ) : sold ? (
               <Button disabled className="min-w-44">
                 Already found a home
               </Button>

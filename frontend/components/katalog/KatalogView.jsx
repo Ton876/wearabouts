@@ -15,7 +15,7 @@ export default function KatalogView() {
     q: searchParams.get("q") || "",
     category: searchParams.get("category") || "",
     size: searchParams.get("size") || "",
-    status: searchParams.get("status") || "",
+    status: searchParams.get("status") || "available",
     max: searchParams.get("max") || "",
   };
   return <Katalog key={searchParams.toString()} initial={initial} />;
@@ -23,9 +23,10 @@ export default function KatalogView() {
 
 function Katalog({ initial }) {
   const [filters, setFilters] = useState(initial);
-  const { items, loading, error } = useItems(filters);
+  // "all" = tanpa filter status ke backend
+  const { items, loading, error } = useItems({ ...filters, status: filters.status === "all" ? "" : filters.status });
 
-  const available = items.filter((i) => i.status === "available").length;
+  const summary = { available: "still looking for a home", sold: "already found a home", all: "available and sold" };
   const category = CATEGORIES.find((c) => c.value === filters.category);
 
   return (
@@ -38,7 +39,7 @@ function Katalog({ initial }) {
           {category ? category.label : "Every piece, once."}
         </h1>
         <p className="text-fg-2" aria-live="polite">
-          {loading ? "Loading..." : `${items.length} ${items.length === 1 ? "piece" : "pieces"} · ${available} still looking for a home`}
+          {loading ? "Loading..." : `${items.length} ${items.length === 1 ? "piece" : "pieces"} · ${summary[filters.status] || summary.all}`}
         </p>
       </div>
 

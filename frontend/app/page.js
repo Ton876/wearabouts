@@ -1,6 +1,7 @@
 import Link from "next/link";
 import HeroCarousel from "@/components/home/HeroCarousel";
 import Marquee from "@/components/home/Marquee";
+import Testimonials from "@/components/home/Testimonials";
 import NewArrivals from "@/components/home/NewArrivals";
 import Reveal from "@/components/ui/Reveal";
 import { CATEGORIES } from "@/lib/config";
@@ -113,6 +114,8 @@ export default function Home() {
           </Reveal>
         ))}
       </section>
+
+      <Testimonials />
     </div>
   );
 }

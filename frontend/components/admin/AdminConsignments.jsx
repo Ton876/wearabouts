@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Button from "@/components/ui/Button";
+import PhotoZoom from "@/components/ui/PhotoZoom";
 import StatusPill from "./StatusPill";
 import { useLoad } from "./useLoad";
 import { api } from "@/lib/api";
-import { formatIDR, photoUrl, shortDate } from "@/lib/format";
+import { formatIDR, shortDate } from "@/lib/format";
 
 // GET /consignments dan PATCH /consignments/:id (accepted / rejected)
 export default function AdminConsignments() {
@@ -62,14 +63,7 @@ function Submission({ c, busy, onReview }) {
         <p className="text-sm text-fg-2">
           From {c.seller?.name} ({c.seller?.email}) · Contact: {c.contact} · {shortDate(c.createdAt)}
         </p>
-        {c.photos?.length > 0 && (
-          <div className="flex gap-2 flex-wrap pt-1">
-            {c.photos.map((p) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={p} src={photoUrl(p)} alt="" className="size-20 rounded-md object-cover bg-photo" />
-            ))}
-          </div>
-        )}
+        <PhotoZoom photos={c.photos} />
       </div>
 
       <div className="flex flex-col gap-3 md:items-start">

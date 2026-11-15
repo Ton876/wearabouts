@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Button from "@/components/ui/Button";
+import PhotoPicker from "@/components/ui/PhotoPicker";
 import { api } from "@/lib/api";
 import { CATEGORIES, SIZES, CONDITIONS } from "@/lib/config";
 
@@ -12,14 +13,6 @@ const labelCls = "text-sm text-fg-2";
 export default function ItemForm({ item, onSaved, onCancel }) {
   const [photos, setPhotos] = useState([]);
   const [state, setState] = useState({ sending: false, error: "" });
-
-  // bersihkan URL preview foto lama
-  useEffect(() => () => photos.forEach((p) => URL.revokeObjectURL(p.url)), [photos]);
-
-  function pickPhotos(e) {
-    const files = Array.from(e.target.files || []).slice(0, 5);
-    setPhotos(files.map((file) => ({ file, url: URL.createObjectURL(file) })));
-  }
 
   async function submit(e) {
     e.preventDefault();
@@ -107,18 +100,10 @@ export default function ItemForm({ item, onSaved, onCancel }) {
       </label>
 
       <div className="flex flex-col gap-2 md:col-span-2">
-        <label htmlFor="f-photos" className={labelCls}>
+        <span className={labelCls}>
           Photos (up to 5){item ? ". New photos replace the current ones." : ""}
-        </label>
-        <input id="f-photos" name="photos" type="file" accept="image/*" multiple onChange={pickPhotos} className="text-sm" />
-        {photos.length > 0 && (
-          <div className="flex gap-2 flex-wrap pt-1">
-            {photos.map((p) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={p.url} src={p.url} alt="" className="size-20 rounded-md object-cover" />
-            ))}
-          </div>
-        )}
+        </span>
+        <PhotoPicker photos={photos} setPhotos={setPhotos} />
       </div>
 
       {state.error && (

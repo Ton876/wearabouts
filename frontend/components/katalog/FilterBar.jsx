@@ -4,6 +4,12 @@ import { useState } from "react";
 import { CATEGORIES, SIZES, PRICE_CAPS } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 
+const STATUS_TABS = [
+  { value: "available", label: "Available" },
+  { value: "sold", label: "Found a home" },
+  { value: "all", label: "All" },
+];
+
 const pill = "min-h-11 px-4 rounded-full border text-[15px] transition-colors";
 
 export default function FilterBar({ filters, onChange }) {
@@ -15,6 +21,14 @@ export default function FilterBar({ filters, onChange }) {
 
   return (
     <div className="flex flex-col gap-5">
+      <div role="group" aria-label="Availability" className="flex flex-wrap items-center gap-2.5">
+        {STATUS_TABS.map((t) => (
+          <button key={t.value} type="button" onClick={() => set("status", t.value)} aria-pressed={filters.status === t.value} className={pillClass(filters.status === t.value)}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
       <form
         role="search"
         onSubmit={(e) => {
@@ -95,22 +109,6 @@ export default function FilterBar({ filters, onChange }) {
             </option>
           ))}
         </select>
-
-        {filters.status === "sold" ? (
-          <button type="button" onClick={() => set("status", "")} className={pillClass(true)}>
-            Sold only ×
-          </button>
-        ) : (
-        <label className={`${pill} border-line inline-flex items-center gap-2.5 cursor-pointer`}>
-          <input
-            type="checkbox"
-            checked={filters.status === "available"}
-            onChange={(e) => set("status", e.target.checked ? "available" : "")}
-            className="size-4 accent-[var(--fg)]"
-          />
-          Hide sold
-        </label>
-        )}
       </div>
     </div>
   );

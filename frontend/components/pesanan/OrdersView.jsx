@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import ItemPhoto from "@/components/ItemPhoto";
@@ -8,6 +8,7 @@ import StatusPill from "@/components/admin/StatusPill";
 import { useLoad } from "@/components/admin/useLoad";
 import PaymentInstructions from "./PaymentInstructions";
 import ReviewForm from "./ReviewForm";
+import { api } from "@/lib/api";
 import { formatIDR, itemMeta, orderCode, shortDate } from "@/lib/format";
 
 const note = {
@@ -22,6 +23,16 @@ const note = {
 export default function OrdersView() {
   const { data, error } = useLoad("/orders/me");
   const [reviewed, setReviewed] = useState([]);
+
+  // cari pesanan selesai yang sudah punya ulasan (satu ulasan per pesanan)
+  useEffect(() => {
+    if (!data) return;
+    const itemIds = [...new Set(data.filter((o) => o.status === "completed" && o.item).map((o) => o.item._id))];
+    Promise.all(itemIds.map((id) => api(`/reviews/item/${id}`).catch(() => null))).then((all) => {
+      const done = all.flatMap((r) => (r ? r.reviews.map((x) => String(x.order)) : []));
+      setReviewed((prev) => [...new Set([...prev, ...done])]);
+    });
+  }, [data]);
 
   if (error) return <p role="alert" className="text-stamp">{error}</p>;
   if (!data) return <p className="text-fg-2">Loading...</p>;

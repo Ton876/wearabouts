@@ -136,6 +136,15 @@ html.theme-anim {
 }
 
 /* di dalam layer supaya class Tailwind masih bisa override */
+@layer base {
+  /* textarea tidak boleh mengecil sampai teksnya terpotong */
+  textarea {
+    min-height: 6rem;
+    max-width: 100%;
+    resize: vertical;
+  }
+}
+
 @layer components {
 /* hang tag */
 
