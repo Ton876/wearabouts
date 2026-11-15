@@ -15,7 +15,7 @@ export default function Testimonials() {
   useEffect(() => {
     if (USE_MOCK) return;
     api("/reviews?featured=true&limit=6")
-      .then((list) => setReviews(list.filter((r) => r.comment?.trim())))
+      .then((list) => setReviews(list))
       .catch(() => {});
   }, []);
 
@@ -36,7 +36,11 @@ export default function Testimonials() {
           return (
             <Reveal as="li" key={r._id} delay={(i % 3) * 90} className="flex flex-col gap-4 rounded-lg border border-line p-6">
               <Stars value={r.rating} size="text-lg" />
+                {r.comment?.trim() ? (
                 <p className="leading-relaxed line-clamp-5">{r.comment}</p>
+              ) : (
+                <p className="text-fg-2 italic">Rated {r.rating} out of 5.</p>
+              )}
                 <div className="mt-auto flex items-center gap-3 pt-2">
                   {photo && (
                     // eslint-disable-next-line @next/next/no-img-element

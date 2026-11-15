@@ -32,11 +32,13 @@ export default function AdminReviews() {
   if (!data) return <p className="text-fg-2">Loading...</p>;
 
   const count = data.filter((r) => r.featured).length;
+  // hanya bintang 4 dan 5 yang boleh ke beranda, komentar tidak wajib
+  const eligible = (r) => r.rating >= 4;
 
   return (
     <div className="flex flex-col gap-6">
       <p className="text-fg-2 max-w-xl">
-        Pick the reviews that appear on the home page. Every review stays visible on its own piece. {count} picked right now.
+        Pick 4 and 5 star reviews for the home page, with or without a comment. Every review stays visible on its own piece. {count} picked right now.
       </p>
 
       {msg && (
@@ -68,8 +70,8 @@ export default function AdminReviews() {
                   )}
                 </p>
               </div>
-              <Button variant={r.featured ? "primary" : "secondary"} disabled={busy === r._id || !r.comment} onClick={() => toggle(r)} aria-pressed={Boolean(r.featured)}>
-                {r.featured ? "On home page" : "Show on home"}
+              <Button variant={r.featured ? "primary" : "secondary"} disabled={busy === r._id || (!eligible(r) && !r.featured)} onClick={() => toggle(r)} aria-pressed={Boolean(r.featured)}>
+                {r.featured ? "On home page" : eligible(r) ? "Show on home" : "Under 4 stars"}
               </Button>
             </li>
           ))}
