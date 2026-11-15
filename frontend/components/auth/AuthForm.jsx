@@ -43,22 +43,26 @@ export default function AuthForm({ mode }) {
     try {
       const u = isRegister ? await register(form.get("name").trim(), email, password) : await login(email, password);
       // next hanya boleh path internal, bukan URL luar
-      const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : null;
-      router.push(safeNext || (u.role === "admin" ? "/admin" : "/katalog"));
+      let safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : null;
+      // halaman admin hanya untuk admin, halaman buyer hanya untuk buyer
+      const forAdmin = safeNext?.startsWith("/admin");
+      const forBuyer = /^\/(pesanan|incaran|checkout)/.test(safeNext || "");
+      if ((forAdmin && u.role !== "admin") || (forBuyer && u.role !== "buyer")) safeNext = null;
+      router.push(safeNext || (u.role === "admin" ? "/admin" : "/"));
     } catch (err) {
       setState({ sending: false, error: friendlyError(err, isRegister) });
     }
   }
 
   if (ready && user && !state.sending) {
-    const home = user.role === "admin" ? "/admin" : "/katalog";
+    const home = user.role === "admin" ? "/admin" : "/";
     return (
       <div className="flex flex-col items-start gap-5">
         <p className="text-lg">
           You&rsquo;re signed in as <span className="font-medium">{user.name}</span>.
         </p>
         <div className="flex flex-wrap gap-3">
-          <Button href={home}>{user.role === "admin" ? "Go to admin" : "Keep browsing"}</Button>
+          <Button href={home}>{user.role === "admin" ? "Go to admin" : "Back to home"}</Button>
           <Button variant="secondary" onClick={logout}>
             Sign out
           </Button>

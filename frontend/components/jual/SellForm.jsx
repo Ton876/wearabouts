@@ -59,9 +59,14 @@ export default function SellForm() {
         <p className="text-fg-2 leading-relaxed">
           We will look at the photos and get back to you within 3 working days, through the contact you left.
         </p>
-        <Button variant="secondary" onClick={() => setState({ sending: false, error: "", done: false })}>
-          Send another piece
-        </Button>
+        <div className="flex flex-wrap items-center gap-x-6">
+          <Button variant="secondary" onClick={() => setState({ sending: false, error: "", done: false })}>
+            Send another piece
+          </Button>
+          <Button href="/pengajuan" variant="ghost">
+            See your requests
+          </Button>
+        </div>
       </div>
     );
   }

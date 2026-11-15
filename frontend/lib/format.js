@@ -31,3 +31,18 @@ export function tagNumber(item) {
   const digits = String(item._id).replace(/\D/g, "");
   return (digits.slice(-4) || "0001").padStart(4, "0");
 }
+
+// kode pesanan pendek dari id, misal "#A1B2C3"
+export function orderCode(order) {
+  return `#${String(order._id).slice(-6).toUpperCase()}`;
+}
+
+// "12 Nov 2026"
+export function shortDate(value) {
+  return new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+// "14 Nov, 17:28"
+export function shortDateTime(value) {
+  return new Date(value).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}

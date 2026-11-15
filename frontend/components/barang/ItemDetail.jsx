@@ -10,6 +10,8 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import { CATEGORIES, CONDITIONS } from "@/lib/config";
+import WishlistButton from "./WishlistButton";
+import ItemReviews from "./ItemReviews";
 import { getItem } from "@/lib/items";
 import { formatIDR, tagNumber } from "@/lib/format";
 
@@ -99,17 +101,21 @@ export default function ItemDetail() {
           )}
 
           <div className="flex flex-wrap gap-3">
-            {/* TODO (Alya): POST /orders, kalau 409 tampilkan pesan keduluan */}
-            <Button disabled={sold} className="min-w-44">
-              {sold ? "Already found a home" : "Buy now"}
-            </Button>
-            {/* TODO (Alya): POST /wishlist */}
-            <Button variant="secondary" disabled={sold}>
-              Save to wishlist
-            </Button>
+            {sold ? (
+              <Button disabled className="min-w-44">
+                Already found a home
+              </Button>
+            ) : (
+              <Button href={`/checkout?item=${item._id}`} className="min-w-44">
+                Buy now
+              </Button>
+            )}
+            <WishlistButton itemId={item._id} disabled={sold} />
           </div>
         </div>
       </div>
+
+      <ItemReviews itemId={item._id} />
     </div>
   );
 }
