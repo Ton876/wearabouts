@@ -74,7 +74,9 @@ exports.listByItem = async (req, res) => {
 exports.listAll = async (req, res) => {
   try {
     const limit = Math.min(Number(req.query.limit) || 12, 50);
-    const reviews = await Review.find()
+    // ?featured=true: hanya yang dipilih admin untuk beranda
+    const filter = req.query.featured === 'true' ? { featured: true } : {};
+    const reviews = await Review.find(filter)
       .populate('user', 'name')
       .populate('item', 'name photos')
       .sort({ createdAt: -1 })
@@ -82,5 +84,25 @@ exports.listAll = async (req, res) => {
     res.json({ success: true, message: 'Ulasan terbaru', data: reviews });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Gagal mengambil ulasan', error: err.message });
+  }
+};
+
+// Admin: pilih atau lepas ulasan untuk testimoni di beranda
+exports.setFeatured = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'ID ulasan tidak valid' });
+    }
+    if (typeof req.body.featured !== 'boolean') {
+      return res.status(400).json({ success: false, message: 'featured harus true atau false' });
+    }
+    const review = await Review.findByIdAndUpdate(id, { featured: req.body.featured }, { returnDocument: 'after' });
+    if (!review) {
+      return res.status(404).json({ success: false, message: 'Ulasan tidak ditemukan' });
+    }
+    res.json({ success: true, message: 'Ulasan diperbarui', data: review });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal memperbarui ulasan', error: err.message });
   }
 };

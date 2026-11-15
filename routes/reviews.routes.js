@@ -6,5 +6,6 @@ const ctrl = require('../controllers/reviews.controller');
 router.post('/', verifyToken, requireRole('buyer'), ctrl.create);
 router.get('/', ctrl.listAll); // publik, ulasan terbaru semua barang
 router.get('/item/:id', ctrl.listByItem); // publik, tanpa token
+router.patch('/:id/featured', verifyToken, requireRole('admin'), ctrl.setFeatured);
 
 module.exports = router;

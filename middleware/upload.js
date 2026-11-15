@@ -23,4 +23,4 @@ if (useCloudinary) {
 const fileFilter = (req, file, cb) =>
   file.mimetype.startsWith('image/') ? cb(null, true) : cb(new Error('File harus berupa gambar'));
 
-module.exports = multer({ storage, fileFilter, limits: { fileSize: 2 * 1024 * 1024 } });
+module.exports = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });

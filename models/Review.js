@@ -5,7 +5,8 @@ const reviewSchema = new mongoose.Schema({
   item: { type: mongoose.Schema.Types.ObjectId, ref: 'Item', required: true },
   order: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true, unique: true }, // 1 ulasan per pesanan
   rating: { type: Number, required: true, min: 1, max: 5 },
-  comment: { type: String, trim: true }
+  comment: { type: String, trim: true },
+  featured: { type: Boolean, default: false } // dipilih admin untuk tampil di beranda
 }, { timestamps: true });
 
 module.exports = mongoose.model('Review', reviewSchema);
