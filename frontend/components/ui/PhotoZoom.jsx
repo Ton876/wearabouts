@@ -4,20 +4,48 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { photoUrl } from "@/lib/format";
 
-// deretan foto kecil, klik untuk membuka besar. Panah kiri kanan pindah foto, Esc menutup
+// deretan foto kecil, klik untuk membuka besar. Klik foto besar untuk zoom, panah pindah foto, Esc menutup
 export default function PhotoZoom({ photos = [], thumbClass = "size-20" }) {
   const [open, setOpen] = useState(null);
+  const [zoomed, setZoomed] = useState(false);
+  const [origin, setOrigin] = useState("50% 50%");
   const closeRef = useRef(null);
   const total = photos.length;
 
-  const move = useCallback((dir) => setOpen((i) => (i === null ? i : (i + dir + total) % total)), [total]);
+  const move = useCallback((dir) => {
+    setZoomed(false);
+    setOpen((i) => (i === null ? i : (i + dir + total) % total));
+  }, [total]);
+
+  const close = () => {
+    setZoomed(false);
+    setOpen(null);
+  };
+
+  // saat zoom, titik pembesaran mengikuti kursor atau jari
+  const track = (e) => {
+    if (!zoomed) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width) * 100;
+    const y = ((e.clientY - r.top) / r.height) * 100;
+    setOrigin(`${Math.min(100, Math.max(0, x))}% ${Math.min(100, Math.max(0, y))}%`);
+  };
+
+  const toggleZoom = (e) => {
+    e.stopPropagation();
+    if (!zoomed) {
+      const r = e.currentTarget.getBoundingClientRect();
+      setOrigin(`${((e.clientX - r.left) / r.width) * 100}% ${((e.clientY - r.top) / r.height) * 100}%`);
+    }
+    setZoomed((z) => !z);
+  };
 
   const isOpen = open !== null;
 
   useEffect(() => {
     if (!isOpen) return;
     const onKey = (e) => {
-      if (e.key === "Escape") setOpen(null);
+      if (e.key === "Escape") close();
       if (e.key === "ArrowRight") move(1);
       if (e.key === "ArrowLeft") move(-1);
     };
@@ -54,13 +82,21 @@ export default function PhotoZoom({ photos = [], thumbClass = "size-20" }) {
           role="dialog"
           aria-modal="true"
           aria-label={`Photo ${open + 1} of ${total}`}
-          onClick={() => setOpen(null)}
+          onClick={close}
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 sm:p-10"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={photoUrl(photos[open])} alt="" onClick={(e) => e.stopPropagation()} className="max-h-full max-w-full object-contain rounded-md" />
+          <div className="max-h-full max-w-full overflow-hidden rounded-md" onClick={(e) => e.stopPropagation()} onPointerMove={track}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photoUrl(photos[open])}
+              alt=""
+              onClick={toggleZoom}
+              style={{ transformOrigin: origin, transform: zoomed ? "scale(2.2)" : "scale(1)", touchAction: "none" }}
+              className={`block max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-5rem)] max-w-full object-contain transition-transform duration-200 ${zoomed ? "cursor-zoom-out" : "cursor-zoom-in"}`}
+            />
+          </div>
 
-          <button ref={closeRef} type="button" onClick={() => setOpen(null)} aria-label="Close" className="absolute top-4 right-4 min-h-11 min-w-11 rounded-full bg-white/15 text-white text-2xl hover:bg-white/25">
+          <button ref={closeRef} type="button" onClick={close} aria-label="Close" className="absolute top-4 right-4 min-h-11 min-w-11 rounded-full bg-white/15 text-white text-2xl hover:bg-white/25">
             ×
           </button>
 
