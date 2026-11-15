@@ -76,6 +76,7 @@ function Submission({ c, busy, onReview }) {
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 rows={3}
+                maxLength={300}
                 className="w-full rounded-md border border-line bg-bg px-4 py-3 text-[15px] focus:border-fg focus:outline-none"
               />
             </label>

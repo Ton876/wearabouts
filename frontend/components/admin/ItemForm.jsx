@@ -96,7 +96,7 @@ export default function ItemForm({ item, onSaved, onCancel }) {
 
       <label className="flex flex-col gap-2 md:col-span-2">
         <span className={labelCls}>Description</span>
-        <textarea id="f-description" name="description" rows={3} defaultValue={item?.description} className={`${field} py-3 min-h-24`} />
+        <textarea id="f-description" name="description" rows={3} maxLength={600} defaultValue={item?.description} className={`${field} py-3 min-h-24`} />
       </label>
 
       <div className="flex flex-col gap-2 md:col-span-2">

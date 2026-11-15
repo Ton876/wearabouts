@@ -143,6 +143,7 @@ export default function SellForm() {
         <textarea
           name="description"
           rows={4}
+          maxLength={600}
           placeholder="Where you got it, how it fits, any marks or repairs"
           className={`${field} py-3 min-h-28`}
         />

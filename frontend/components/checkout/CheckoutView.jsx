@@ -108,7 +108,7 @@ export default function CheckoutView() {
         </label>
         <label className="flex flex-col gap-2">
           <span className="text-sm text-fg-2">Full address</span>
-          <textarea id="address" name="address" required rows={4} autoComplete="street-address" placeholder="Street, number, district, city, postal code" className={`${field} py-3 min-h-28`} />
+          <textarea id="address" name="address" required rows={4} maxLength={300} autoComplete="street-address" placeholder="Street, number, district, city, postal code" className={`${field} py-3 min-h-28`} />
         </label>
 
         {state.error && (

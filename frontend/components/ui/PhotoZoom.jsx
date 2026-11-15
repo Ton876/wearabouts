@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { photoUrl } from "@/lib/format";
 
 // deretan foto kecil, klik untuk membuka besar. Panah kiri kanan pindah foto, Esc menutup
@@ -11,17 +12,26 @@ export default function PhotoZoom({ photos = [], thumbClass = "size-20" }) {
 
   const move = useCallback((dir) => setOpen((i) => (i === null ? i : (i + dir + total) % total)), [total]);
 
+  const isOpen = open !== null;
+
   useEffect(() => {
-    if (open === null) return;
+    if (!isOpen) return;
     const onKey = (e) => {
       if (e.key === "Escape") setOpen(null);
       if (e.key === "ArrowRight") move(1);
       if (e.key === "ArrowLeft") move(-1);
     };
     window.addEventListener("keydown", onKey);
-    closeRef.current?.focus();
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, move]);
+  }, [isOpen, move]);
+
+  // fokus sekali saat dibuka, dan halaman di belakang tidak ikut ter-scroll
+  useEffect(() => {
+    if (!isOpen) return;
+    closeRef.current?.focus({ preventScroll: true });
+    window.__lenis?.stop();
+    return () => window.__lenis?.start();
+  }, [isOpen]);
 
   if (!total) return null;
 
@@ -38,7 +48,8 @@ export default function PhotoZoom({ photos = [], thumbClass = "size-20" }) {
         ))}
       </ul>
 
-      {open !== null && (
+      {isOpen &&
+        createPortal(
         <div
           role="dialog"
           aria-modal="true"
@@ -66,7 +77,8 @@ export default function PhotoZoom({ photos = [], thumbClass = "size-20" }) {
               </p>
             </>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

@@ -140,6 +140,7 @@ html.theme-anim {
   /* textarea tidak boleh mengecil sampai teksnya terpotong */
   textarea {
     min-height: 6rem;
+    max-height: 14rem;
     max-width: 100%;
     resize: vertical;
   }
@@ -357,7 +358,8 @@ html.theme-anim {
   }
 }
 .page-in {
-  animation: page-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  /* backwards: transform dilepas setelah selesai, supaya elemen fixed di dalamnya tidak ikut ter-scroll */
+  animation: page-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 /* judul hero: tiap baris naik dari balik masker */
