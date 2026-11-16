@@ -88,7 +88,12 @@ Komponen client yang pakai `useParams`, `usePathname`, atau `useSearchParams` ha
 
 ## Yang sudah dan belum
 
-Sudah: design system + dark mode, navbar sticky + menu Shop, footer, home (carousel, kategori, rail barang baru), katalog + filter (kategori, ukuran, harga, status), detail barang (tampilan), bantuan (`/bantuan`), jual (`/jual`, form ke `POST /consignments`), masuk (`/masuk`) dan daftar (`/daftar`), navbar sesuai status login dan role, 404.
+Sudah: design system + dark mode, navbar sticky + menu Shop, footer, home (carousel, kategori, rail barang baru), katalog + filter (kategori, ukuran, harga, status), detail barang (tampilan), bantuan (`/bantuan`), jual (`/jual`, form ke `POST /consignments`), masuk (`/masuk`) dan daftar (`/daftar`), navbar sesuai status login dan role, 404, checkout, admin, incaran, pesanan + ulasan.
+
+- Checkout (`/checkout?item=ID`, tombol Buy now di detail barang): satu barang per pesanan, `POST /orders`. Kalau 409 (barang keduluan) tampil pesan "Someone got there first". Sukses mengarah ke `/pesanan`.
+- Admin (`/admin`, hanya role admin): tab Pieces (tambah, ubah, hapus + upload foto), Orders (ubah status satu arah sesuai backend), Submissions (terima/tolak pengajuan jual). Kodenya di `components/admin/`.
+- Incaran (`/incaran`, tombol Save to wishlist di detail barang): `GET/POST/DELETE /wishlist`.
+- Pesanan saya (`/pesanan`): `GET /orders`. Pesanan berstatus completed menampilkan form ulasan (`POST /reviews`, satu ulasan per pesanan). Ulasan tampil publik di detail barang lewat `GET /reviews/item/:id`.
 
 ### Login di halaman lain
 
@@ -98,7 +103,4 @@ Sudah: design system + dark mode, navbar sticky + menu Shop, footer, home (carou
 
 Belum:
 
-- [ ] Checkout `POST /orders`, tangani 409 dengan pesan "keduluan"
-- [ ] Incaran (`/incaran`), pesanan saya (`/pesanan`) + form ulasan
-- [ ] Admin: daftar barang, tambah/edit + upload foto, daftar pesanan + ubah status, daftar pengajuan jual (`GET /consignments`, terima/tolak via `PATCH /consignments/:id`)
 - [ ] Cek bentuk respons `GET /items/:id` begitu backend items di-push, sesuaikan `ItemDetail.jsx` kalau datanya dibungkus (misalnya `{ item, averageRating }`)

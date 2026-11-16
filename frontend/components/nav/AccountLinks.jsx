@@ -1,13 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { logout, useAuth } from "@/lib/auth";
 
 // link kanan navbar, berubah sesuai status login dan role
 export default function AccountLinks() {
   const { user, ready } = useAuth();
-  const router = useRouter();
 
   if (!ready) return <span className="py-2 opacity-0">Sign in</span>;
 
@@ -19,9 +17,10 @@ export default function AccountLinks() {
     );
   }
 
+  // pindah halaman penuh supaya tidak bertabrakan dengan redirect RequireAuth
   const signOut = () => {
     logout();
-    router.push("/");
+    window.location.assign("/");
   };
 
   return (

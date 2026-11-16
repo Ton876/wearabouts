@@ -1,104 +1,98 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import Badge from "@/components/ui/Badge";
+import { useState } from "react";
 import Button from "@/components/ui/Button";
-import { useFetch } from "@/hooks/useFetch";
-import { getConsignments, reviewConsignment } from "@/lib/admin";
-import { formatIDR, photoUrl } from "@/lib/format";
+import PhotoZoom from "@/components/ui/PhotoZoom";
+import StatusPill from "./StatusPill";
+import { useLoad } from "./useLoad";
+import { api } from "@/lib/api";
+import { formatIDR, shortDate } from "@/lib/format";
 
-const FILTERS = ["pending", "accepted", "rejected"];
-
-// pengajuan titip jual dari halaman Sell with us. Accept atau Reject lewat PATCH /consignments/:id
+// GET /consignments dan PATCH /consignments/:id (accepted / rejected)
 export default function AdminConsignments() {
-  const [filter, setFilter] = useState("pending");
-  const load = useCallback(() => getConsignments(filter), [filter]);
-  const { data: requests, error, loading, reload } = useFetch(load);
-  const [notes, setNotes] = useState({});
+  const { data, setData, error } = useLoad("/consignments");
   const [busy, setBusy] = useState("");
-  const [actionError, setActionError] = useState("");
+  const [msg, setMsg] = useState("");
 
-  async function decide(id, status) {
-    setBusy(id);
-    setActionError("");
+  async function review(c, status, adminNote) {
+    setBusy(c._id);
+    setMsg("");
     try {
-      await reviewConsignment(id, status, notes[id] || "");
-      reload();
+      await api(`/consignments/${c._id}`, { method: "PATCH", auth: true, body: { status, adminNote } });
+      setData((list) => list.map((x) => (x._id === c._id ? { ...x, status, adminNote } : x)));
     } catch (err) {
-      setActionError(err.message);
-    } finally {
-      setBusy("");
+      setMsg(err.message);
     }
+    setBusy("");
   }
 
-  return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by status">
-        {FILTERS.map((s) => (
-          <Button key={s} variant={filter === s ? undefined : "secondary"} className="min-h-11 capitalize" onClick={() => setFilter(s)}>
-            {s}
-          </Button>
-        ))}
-      </div>
+  if (error) return <p role="alert" className="text-stamp">{error}</p>;
+  if (!data) return <p className="text-fg-2">Loading...</p>;
+  if (data.length === 0) return <p className="text-fg-2 py-8">No submissions yet.</p>;
 
-      {actionError && (
-        <p className="text-stamp" role="alert">
-          {actionError}
+  return (
+    <div className="flex flex-col gap-4">
+      {msg && (
+        <p role="alert" className="text-stamp text-sm">
+          {msg}
         </p>
       )}
-      {loading && <p className="text-fg-2">Loading...</p>}
-      {error && <p className="text-stamp">{error}</p>}
-      {!loading && !error && requests.length === 0 && <p className="text-fg-2">No {filter} requests.</p>}
-
-      <ul className="flex flex-col gap-4 max-w-3xl">
-        {(requests || []).map((c) => (
-          <li key={c._id} className="flex flex-col gap-3 rounded-2xl border border-line p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="flex flex-col gap-1">
-                <p className="font-display text-xl">{c.name}</p>
-                <p className="text-sm text-fg-2">
-                  {[c.brand, c.category, c.size, c.condition].filter(Boolean).join(" · ")} · asking {formatIDR(c.askingPrice)}
-                </p>
-                <p className="text-sm text-fg-2">
-                  From {c.seller?.name} ({c.seller?.email}), contact: {c.contact}
-                </p>
-              </div>
-              <Badge variant={c.status === "pending" ? "outline" : "gold"}>{c.status}</Badge>
-            </div>
-
-            {c.description && <p className="text-fg-2">{c.description}</p>}
-
-            {c.photos?.length > 0 && (
-              <div className="flex gap-2 flex-wrap">
-                {c.photos.map((p) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={p} src={photoUrl(p)} alt="" className="size-20 rounded-md object-cover bg-photo" />
-                ))}
-              </div>
-            )}
-
-            {c.adminNote && <p className="text-sm text-fg-2">Note: {c.adminNote}</p>}
-
-            {c.status === "pending" && (
-              <div className="flex flex-wrap items-center gap-3">
-                <input
-                  aria-label="Note to the seller"
-                  placeholder="Note to the seller (optional)"
-                  value={notes[c._id] || ""}
-                  onChange={(e) => setNotes((n) => ({ ...n, [c._id]: e.target.value }))}
-                  className="min-h-11 flex-1 min-w-52 rounded-md border border-line bg-bg px-4 text-[15px] focus:border-fg focus:outline-none"
-                />
-                <Button className="min-h-11" disabled={busy === c._id} onClick={() => decide(c._id, "accepted")}>
-                  Accept
-                </Button>
-                <Button variant="secondary" className="min-h-11" disabled={busy === c._id} onClick={() => decide(c._id, "rejected")}>
-                  Reject
-                </Button>
-              </div>
-            )}
-          </li>
+      <ul className="flex flex-col">
+        {data.map((c) => (
+          <Submission key={c._id} c={c} busy={busy === c._id} onReview={review} />
         ))}
       </ul>
     </div>
+  );
+}
+
+function Submission({ c, busy, onReview }) {
+  const [note, setNote] = useState("");
+  return (
+    <li className="grid gap-5 border-t border-line py-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="flex flex-col gap-2 min-w-0">
+        <div className="flex items-center gap-3">
+          <span className="font-display text-2xl">{c.name}</span>
+          <StatusPill status={c.status} />
+        </div>
+        <p className="text-sm text-fg-2">
+          {[c.brand, c.category, `Size ${c.size}`, c.condition].filter(Boolean).join(" · ")}
+        </p>
+        <p>Asking {formatIDR(c.askingPrice)}</p>
+        {c.description && <p className="text-fg-2 text-sm leading-relaxed">{c.description}</p>}
+        <p className="text-sm text-fg-2">
+          From {c.seller?.name} ({c.seller?.email}) · Contact: {c.contact} · {shortDate(c.createdAt)}
+        </p>
+        <PhotoZoom photos={c.photos} />
+      </div>
+
+      <div className="flex flex-col gap-3 md:items-start">
+        {c.status === "pending" ? (
+          <>
+            <label className="flex flex-col gap-2 w-full">
+              <span className="text-sm text-fg-2">Note for the seller (optional)</span>
+              <textarea
+                id={`note-${c._id}`}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={3}
+                maxLength={300}
+                className="w-full rounded-md border border-line bg-bg px-4 py-3 text-[15px] focus:border-fg focus:outline-none"
+              />
+            </label>
+            <div className="flex gap-2">
+              <Button disabled={busy} onClick={() => onReview(c, "accepted", note)} className="min-h-11 px-4 text-sm">
+                Accept
+              </Button>
+              <Button variant="secondary" disabled={busy} onClick={() => onReview(c, "rejected", note)} className="min-h-11 px-4 text-sm">
+                Decline
+              </Button>
+            </div>
+          </>
+        ) : (
+          c.adminNote && <p className="text-sm text-fg-2">Note: {c.adminNote}</p>
+        )}
+      </div>
+    </li>
   );
 }

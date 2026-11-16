@@ -72,7 +72,7 @@ export default function MobileMenu() {
                 type="button"
                 onClick={() => {
                   logout();
-                  close();
+                  window.location.assign("/");
                 }}
                 className="py-3 text-lg border-b border-line text-left"
               >
