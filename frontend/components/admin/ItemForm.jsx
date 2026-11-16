@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Button from "@/components/ui/Button";
-import PhotoPicker from "@/components/ui/PhotoPicker";
+import PhotoPicker, { existingPhotos } from "@/components/ui/PhotoPicker";
 import { api } from "@/lib/api";
 import { CATEGORIES, SIZES, CONDITIONS } from "@/lib/config";
 
@@ -11,15 +11,23 @@ const labelCls = "text-sm text-fg-2";
 
 // tambah (POST /items) atau ubah (PUT /items/:id), multipart supaya bisa kirim foto
 export default function ItemForm({ item, onSaved, onCancel }) {
-  const [photos, setPhotos] = useState([]);
+  const [photos, setPhotos] = useState(() => existingPhotos(item?.photos));
   const [state, setState] = useState({ sending: false, error: "" });
 
   async function submit(e) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     form.delete("photos");
-    // ubah tanpa foto baru: foto lama dipertahankan backend
-    photos.forEach((p) => form.append("photos", p.file));
+    // urutan foto: path untuk foto lama, { new: i } untuk file baru (i = urutan di daftar file)
+    const order = [];
+    let fresh = 0;
+    photos.forEach((p) => {
+      if (p.file) {
+        form.append("photos", p.file);
+        order.push({ new: fresh++ });
+      } else order.push(p.path);
+    });
+    if (item) form.append("photoOrder", JSON.stringify(order));
 
     setState({ sending: true, error: "" });
     try {
@@ -100,9 +108,7 @@ export default function ItemForm({ item, onSaved, onCancel }) {
       </label>
 
       <div className="flex flex-col gap-2 md:col-span-2">
-        <span className={labelCls}>
-          Photos (up to 5){item ? ". New photos replace the current ones." : ""}
-        </span>
+        <span className={labelCls}>Photos (up to 5)</span>
         <PhotoPicker photos={photos} setPhotos={setPhotos} />
       </div>
 

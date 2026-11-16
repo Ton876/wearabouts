@@ -4,8 +4,8 @@ import { useState } from "react";
 import Image from "next/image";
 import { photoUrl } from "@/lib/format";
 
-export default function ItemPhoto({ item, faded = false, sizes = "(max-width: 768px) 50vw, 25vw", preload = false, compact = false, className = "", children }) {
-  const src = photoUrl(item.photos?.[0]);
+export default function ItemPhoto({ item, faded = false, sizes = "(max-width: 768px) 50vw, 25vw", preload = false, compact = false, index = 0, className = "", children }) {
+  const src = photoUrl(item.photos?.[index]);
   // file foto bisa hilang (misal tersimpan di laptop lain), jatuh ke placeholder
   const [broken, setBroken] = useState(false);
   // Next tidak bisa optimize gambar dari localhost

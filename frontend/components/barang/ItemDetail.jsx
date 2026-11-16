@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import ItemPhoto from "@/components/ItemPhoto";
+import ItemGallery from "./ItemGallery";
 import HangTag from "@/components/ui/HangTag";
 import SoldStamp from "@/components/ui/SoldStamp";
 import Badge from "@/components/ui/Badge";
@@ -54,13 +54,13 @@ export default function ItemDetail() {
       />
 
       <div className="grid gap-10 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:gap-16">
-        <ItemPhoto item={item} faded={sold} sizes="(max-width: 768px) 100vw, 55vw" preload>
+        <ItemGallery item={item} faded={sold} sizes="(max-width: 768px) 100vw, 55vw">
           {sold && (
             <div className="absolute inset-0 flex items-center justify-center">
               <SoldStamp large />
             </div>
           )}
-        </ItemPhoto>
+        </ItemGallery>
 
         <div className="relative flex flex-col gap-7 md:pt-4">
           {!sold && (
