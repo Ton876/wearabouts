@@ -6,10 +6,15 @@ const Review = require('../models/Review');
 
 exports.checkout = async (req, res) => {
   try {
-    const { itemId } = req.body;
+    const { itemId, shippingAddress } = req.body;
 
     if (!itemId || !mongoose.isValidObjectId(itemId)) {
       return res.status(400).json({ success: false, message: 'itemId tidak valid' });
+    }
+    // dicek sebelum barang dikunci, supaya barang tidak sempat berubah jadi sold
+    const { name, phone, address } = shippingAddress || {};
+    if (!name || !phone || !address) {
+      return res.status(400).json({ success: false, message: 'shippingAddress (name, phone, address) wajib diisi' });
     }
 
     const item = await Item.findOneAndUpdate(
@@ -30,6 +35,7 @@ exports.checkout = async (req, res) => {
         buyer: req.user.id,
         item: item._id,
         price: item.price,
+        shippingAddress: { name, phone, address },
         status: 'pending'
       });
       return res.status(201).json({ success: true, message: 'Checkout berhasil', data: order });

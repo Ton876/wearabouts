@@ -28,7 +28,7 @@ Proyek ini adalah REST API (backend) dengan dua peran: **admin** (mengelola bara
 | Runtime dan framework | Node.js, Express |
 | Database | MongoDB Atlas, Mongoose |
 | Autentikasi | jsonwebtoken (JWT), bcrypt |
-| Upload foto | Multer |
+| Upload foto | Multer + Cloudinary (lokal ke folder `uploads/` kalau Cloudinary belum diatur) |
 | Uji dan dokumentasi API | Postman |
 | Version control | Git dan GitHub |
 
@@ -42,7 +42,8 @@ wearabouts/
 ├── .env.example
 ├── .gitignore
 ├── config/
-│   └── db.js
+│   ├── db.js
+│   └── cloudinary.js
 ├── middleware/
 │   ├── auth.js            (verifyToken)
 │   ├── role.js            (requireRole)
@@ -59,6 +60,8 @@ wearabouts/
 │   ├── orders.controller.js
 │   ├── wishlist.controller.js
 │   └── reviews.controller.js
+├── utils/
+│   └── savePhotos.js      (simpan foto ke Cloudinary atau uploads/)
 ├── routes/
 │   ├── auth.routes.js
 │   ├── items.routes.js
@@ -74,7 +77,23 @@ wearabouts/
 1. Clone repo, lalu masuk ke foldernya
 2. `npm install`
 3. Salin `.env.example` menjadi `.env`, lalu isi `MONGO_URI`, `JWT_SECRET`, `ADMIN_EMAIL`, dan `ADMIN_PASSWORD`
-4. Jalankan server: `npm run dev` (berjalan di http://localhost:3000)
+4. Buat akun admin: `node seedAdmin.js` (memakai `ADMIN_EMAIL` dan `ADMIN_PASSWORD` dari `.env`)
+5. Jalankan server: `npm run dev` (berjalan di http://localhost:3000)
+
+## Catatan API (tambahan Milestone 2)
+
+- `POST /api/items` dan `PUT /api/items/:id` (form-data) menerima `chest` dan `length` dalam cm. `category` wajib salah satu dari `outerwear`, `tops`, `bottoms`, `dresses`.
+- `POST /api/orders` sekarang wajib mengirim alamat:
+  ```json
+  { "itemId": "...", "shippingAddress": { "name": "...", "phone": "...", "address": "..." } }
+  ```
+- `GET /api/reviews?limit=12` (publik): ulasan terbaru dari semua barang, untuk testimoni di home.
+- Foto: kalau `CLOUDINARY_*` di `.env` diisi, foto disimpan di Cloudinary dan `photos` berisi URL lengkap. Kalau kosong, foto disimpan di `uploads/`.
+
+- `POST /api/consignments` (buyer, multipart): ajukan barang untuk dijual. Field: name, brand, category, size, condition, askingPrice, description, contact, photos (maks 5).
+- `GET /api/consignments/mine` (buyer): daftar pengajuan sendiri beserta statusnya.
+- `GET /api/consignments?status=pending` (admin): semua pengajuan.
+- `PATCH /api/consignments/:id` (admin): body `{ status: "accepted" | "rejected", adminNote }`. Kalau diterima, admin membuat Item baru lewat form barang seperti biasa.
 
 ## Laporan
 
