@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Item = require('../models/Item');
 const Order = require('../models/Order');
 const savePhotos = require('../utils/savePhotos');
+const resolvePhotoOrder = require('../utils/photoOrder');
 
 // chest dan length datang dari form-data (string), kosong berarti tidak diisi
 const readMeasurements = (body) => {
@@ -29,6 +30,7 @@ exports.getItems = async (req, res) => {
     const items = await Item.find(filter).sort({ createdAt: -1 });
     res.json({ success: true, message: 'Daftar barang', data: items });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ success: false, message: 'Terjadi kesalahan server' });
   }
 };
@@ -57,6 +59,7 @@ exports.getItemById = async (req, res) => {
     }
     res.json({ success: true, message: 'Detail barang', data: { ...item.toObject(), averageRating, reviewCount } });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ success: false, message: 'Terjadi kesalahan server' });
   }
 };
@@ -82,6 +85,7 @@ exports.createItem = async (req, res) => {
     if (err.name === 'ValidationError') {
       return res.status(400).json({ success: false, message: err.message });
     }
+    console.error(err);
     res.status(500).json({ success: false, message: 'Terjadi kesalahan server' });
   }
 };
@@ -96,7 +100,14 @@ exports.updateItem = async (req, res) => {
     allowed.forEach((k) => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
     const measurements = readMeasurements(req.body);
     Object.entries(measurements).forEach(([k, v]) => { update['measurements.' + k] = v; });
-    if (req.files && req.files.length) update.photos = await savePhotos(req.files);
+    if (req.body.photoOrder !== undefined) {
+      // urutan foto dikirim lengkap: foto lama boleh diurutkan ulang atau dibuang, foto baru disisipkan
+      const current = await Item.findById(req.params.id).select('photos');
+      if (!current) return res.status(404).json({ success: false, message: 'Barang tidak ditemukan' });
+      update.photos = await resolvePhotoOrder(req.body.photoOrder, current.photos, req.files);
+    } else if (req.files && req.files.length) {
+      update.photos = await savePhotos(req.files);
+    }
 
     if (update.status && await Order.exists({ item: req.params.id, status: { $ne: 'cancelled' } })) {
       return res.status(409).json({ success: false, message: 'Barang punya pesanan aktif, status tidak bisa diubah manual' });
@@ -122,6 +133,7 @@ exports.deleteItem = async (req, res) => {
     if (!item) return res.status(404).json({ success: false, message: 'Barang tidak ditemukan' });
     res.json({ success: true, message: 'Barang dihapus' });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ success: false, message: 'Terjadi kesalahan server' });
   }
 };
