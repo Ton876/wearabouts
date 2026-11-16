@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { photoUrl } from "@/lib/format";
 
-export default function ItemPhoto({ item, faded = false, sizes = "(max-width: 768px) 50vw, 25vw", preload = false, className = "", children }) {
+export default function ItemPhoto({ item, faded = false, sizes = "(max-width: 768px) 50vw, 25vw", preload = false, compact = false, className = "", children }) {
   const src = photoUrl(item.photos?.[0]);
   // file foto bisa hilang (misal tersimpan di laptop lain), jatuh ke placeholder
   const [broken, setBroken] = useState(false);
@@ -26,9 +26,9 @@ export default function ItemPhoto({ item, faded = false, sizes = "(max-width: 76
             className={`object-cover transition-transform duration-700 group-hover:scale-[1.03] ${faded ? "grayscale-[70%] opacity-60" : ""}`}
           />
         ) : (
-          <div className="absolute inset-0 flex flex-col items-start justify-end p-4">
-            <span className="font-display italic text-3xl text-fg/15 leading-none">{item.category ? item.category.charAt(0).toUpperCase() + item.category.slice(1) : ""}</span>
-            <span className="mt-2 text-[11px] text-fg-2/70">Photo coming soon</span>
+          <div className={`absolute inset-0 flex flex-col items-start justify-end ${compact ? "p-3" : "p-4"}`}>
+            <span className={`font-display italic text-fg/15 leading-none ${compact ? "text-lg" : "text-3xl"}`}>{item.category ? item.category.charAt(0).toUpperCase() + item.category.slice(1) : ""}</span>
+            {!compact && <span className="mt-2 text-[11px] text-fg-2/70">Photo coming soon</span>}
           </div>
         )}
       </div>

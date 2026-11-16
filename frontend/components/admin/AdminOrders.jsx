@@ -1,86 +1,90 @@
 "use client";
 
 import { useState } from "react";
-import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import { useFetch } from "@/hooks/useFetch";
-import { NEXT_STATUS, getAllOrders, updateOrderStatus } from "@/lib/admin";
-import { ORDER_STATUS } from "@/lib/orders";
-import { formatDate } from "@/lib/date";
-import { formatIDR } from "@/lib/format";
+import StatusPill from "./StatusPill";
+import { useLoad } from "./useLoad";
+import { api } from "@/lib/api";
+import { formatIDR, orderCode, shortDate } from "@/lib/format";
 
+// urutan status sama dengan backend (satu arah)
+const next = {
+  pending: [
+    ["paid", "Mark as paid"],
+    ["cancelled", "Cancel"],
+  ],
+  paid: [
+    ["shipped", "Mark as shipped"],
+    ["cancelled", "Cancel"],
+  ],
+  shipped: [["completed", "Mark as completed"]],
+  completed: [],
+  cancelled: [],
+};
+
+// GET /orders dan PATCH /orders/:id/status
 export default function AdminOrders() {
-  const { data: orders, error, loading, reload } = useFetch(getAllOrders);
+  const { data, setData, error } = useLoad("/orders");
   const [busy, setBusy] = useState("");
-  const [actionError, setActionError] = useState("");
+  const [msg, setMsg] = useState("");
 
-  async function change(order, status) {
+  async function setStatus(order, status) {
     setBusy(order._id);
-    setActionError("");
+    setMsg("");
     try {
-      await updateOrderStatus(order._id, status);
-      reload();
+      await api(`/orders/${order._id}/status`, { method: "PATCH", auth: true, body: { status } });
+      setData((list) => list.map((o) => (o._id === order._id ? { ...o, status } : o)));
     } catch (err) {
-      setActionError(err.message);
-    } finally {
-      setBusy("");
+      setMsg(err.message);
     }
+    setBusy("");
   }
 
-  if (loading) return <p className="text-fg-2 py-16">Loading...</p>;
-  if (error) return <p className="text-stamp py-16">{error}</p>;
-  if (orders.length === 0) return <p className="text-fg-2">No orders yet.</p>;
+  if (error) return <p role="alert" className="text-stamp">{error}</p>;
+  if (!data) return <p className="text-fg-2">Loading...</p>;
+  if (data.length === 0) return <p className="text-fg-2 py-8">No orders yet.</p>;
 
   return (
     <div className="flex flex-col gap-4">
-      {actionError && (
-        <p className="text-stamp" role="alert">
-          {actionError}
+      {msg && (
+        <p role="alert" className="text-stamp text-sm">
+          {msg}
         </p>
       )}
-
-      <ul className="flex flex-col gap-4 max-w-3xl">
-        {orders.map((order) => {
-          const status = ORDER_STATUS[order.status] || { label: order.status, variant: "outline" };
-          return (
-            <li key={order._id} className="flex flex-col gap-3 rounded-2xl border border-line p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs text-fg-2">
-                    Order #{order._id.slice(-6).toUpperCase()} · {formatDate(order.createdAt)}
-                  </p>
-                  <p className="font-display text-xl">{order.item?.name || "Deleted piece"}</p>
-                  <p className="text-sm text-fg-2">
-                    {formatIDR(order.price)} · {order.buyer?.name} ({order.buyer?.email})
-                  </p>
-                </div>
-                <Badge variant={status.variant}>{status.label}</Badge>
+      <ul className="flex flex-col">
+        {data.map((o) => (
+          <li key={o._id} className="grid gap-4 border-t border-line py-6 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1.4fr)_auto] md:items-start">
+            <div className="flex flex-col gap-1 min-w-0">
+              <div className="flex items-center gap-3">
+                <span className="font-display text-xl">{orderCode(o)}</span>
+                <StatusPill status={o.status} />
               </div>
+              <p className="text-fg-2 text-sm">{shortDate(o.createdAt)}</p>
+              <p className="mt-1">{o.item?.name || "Piece removed"}</p>
+              <p className="text-fg-2 text-sm">{formatIDR(o.price)}</p>
+            </div>
 
-              {order.shippingAddress && (
-                <p className="text-sm text-fg-2">
-                  Ship to {order.shippingAddress.name}, {order.shippingAddress.address} ({order.shippingAddress.phone})
-                </p>
-              )}
+            <div className="flex flex-col gap-1 text-sm min-w-0">
+              <p className="text-fg-2">Buyer: {o.buyer?.name} ({o.buyer?.email})</p>
+              <p>{o.shippingAddress?.name} · {o.shippingAddress?.phone}</p>
+              <p className="text-fg-2 break-words">{o.shippingAddress?.address}</p>
+            </div>
 
-              {NEXT_STATUS[order.status]?.length > 0 && (
-                <div className="flex flex-wrap gap-3">
-                  {NEXT_STATUS[order.status].map((next) => (
-                    <Button
-                      key={next}
-                      variant={next === "cancelled" ? "ghost" : "secondary"}
-                      className={`min-h-11 ${next === "cancelled" ? "text-stamp" : ""}`}
-                      disabled={busy === order._id}
-                      onClick={() => change(order, next)}
-                    >
-                      {next === "cancelled" ? "Cancel order" : `Mark as ${ORDER_STATUS[next].label.toLowerCase()}`}
-                    </Button>
-                  ))}
-                </div>
-              )}
-            </li>
-          );
-        })}
+            <div className="flex flex-wrap gap-2 md:justify-end">
+              {next[o.status].map(([status, label]) => (
+                <Button
+                  key={status}
+                  variant={status === "cancelled" ? "secondary" : "primary"}
+                  disabled={busy === o._id}
+                  onClick={() => setStatus(o, status)}
+                  className="min-h-11 px-4 text-sm"
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </li>
+        ))}
       </ul>
     </div>
   );

@@ -1,65 +1,67 @@
 "use client";
 
-import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import { useMyConsignments } from "@/hooks/useMyConsignments";
-import { CONSIGNMENT_STATUS } from "@/lib/consignments";
-import { formatDate } from "@/lib/date";
-import { formatIDR, photoUrl } from "@/lib/format";
+import StatusPill from "@/components/admin/StatusPill";
+import { useLoad } from "@/components/admin/useLoad";
+import { formatIDR, photoUrl, shortDate } from "@/lib/format";
 
+const label = {
+  pending: "Under review",
+  accepted: "Accepted",
+  rejected: "Not accepted",
+};
 
-const STATUS_NOTE = {
+const note = {
   pending: "We are looking at your photos. You will hear from us within 3 working days.",
   accepted: "We would love to list this piece. We will reach you through the contact you left.",
   rejected: "We could not take this piece this time.",
 };
 
+// GET /consignments/mine (pengajuan jual milik sendiri)
 export default function MyRequests() {
-  const { requests, error, loading } = useMyConsignments();
+  const { data, error } = useLoad("/consignments/mine");
 
-  if (loading) return <p className="text-fg-2 py-16">Loading...</p>;
-  if (error) return <p className="text-stamp py-16">{error}</p>;
+  if (error) return <p role="alert" className="text-stamp">{error}</p>;
+  if (!data) return <p className="text-fg-2">Loading...</p>;
 
-  if (requests.length === 0) {
+  if (data.length === 0) {
     return (
-      <div className="flex flex-col items-start gap-5 py-10">
-        <p className="text-lg text-fg-2">You have not sent us anything to sell yet.</p>
+      <div className="flex flex-col items-start gap-5 py-6">
+        <p className="text-fg-2 text-lg">You haven&rsquo;t sent us anything to sell yet.</p>
         <Button href="/jual">Sell with us</Button>
       </div>
     );
   }
 
   return (
-    <ul className="flex flex-col gap-6 max-w-3xl">
-      {requests.map((request) => {
-        const status = CONSIGNMENT_STATUS[request.status] || { label: request.status, variant: "outline" };
-        const photo = photoUrl(request.photos?.[0]);
-
+    <ul className="flex flex-col">
+      {data.map((r) => {
+        const photo = photoUrl(r.photos?.[0]);
         return (
-          <li key={request._id} className="flex flex-col gap-5 rounded-2xl border border-line p-5 sm:flex-row">
-            {photo && (
-              
-              <img src={photo} alt="" className="size-28 shrink-0 rounded-md object-cover bg-photo" />
+          <li key={r._id} className="grid gap-5 border-t border-line py-7 sm:grid-cols-[112px_minmax(0,1fr)]">
+            {photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photo} alt="" className="aspect-[4/5] w-28 rounded-lg bg-photo object-cover" />
+            ) : (
+              <div className="aspect-[4/5] w-28 rounded-lg bg-photo" />
             )}
 
-            <div className="flex flex-1 flex-col gap-3">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs text-fg-2">Sent {formatDate(request.createdAt)}</p>
-                  <p className="font-display text-2xl">{request.name}</p>
-                </div>
-                <Badge variant={status.variant}>{status.label}</Badge>
+            <div className="flex flex-col gap-3 min-w-0">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="font-display text-2xl leading-tight">{r.name}</span>
+                <StatusPill status={r.status} label={label[r.status]} />
+                <span className="text-sm text-fg-2">Sent {shortDate(r.createdAt)}</span>
               </div>
 
               <p className="text-sm text-fg-2">
-                {[request.brand, request.size, request.condition].filter(Boolean).join(" · ")} · asking {formatIDR(request.askingPrice)}
+                {[r.brand, r.size, r.condition].filter(Boolean).join(" · ")} · asking {formatIDR(r.askingPrice)}
               </p>
 
-              {STATUS_NOTE[request.status] && <p className="text-fg-2">{STATUS_NOTE[request.status]}</p>}
+              {note[r.status] && <p className="text-fg-2">{note[r.status]}</p>}
 
-              {request.adminNote && (
-                <p className="text-sm border-l-2 border-gold pl-4">
-                  <span className="text-fg-2">Note from us:</span> {request.adminNote}
+              {r.adminNote && (
+                <p className="border-l-2 border-gold pl-4 text-sm break-words">
+                  <span className="text-fg-2">Note from us:</span> {r.adminNote}
                 </p>
               )}
             </div>

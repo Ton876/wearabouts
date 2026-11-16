@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Button from "@/components/ui/Button";
+import PhotoPicker from "@/components/ui/PhotoPicker";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { CATEGORIES, SIZES, CONDITIONS, USE_MOCK } from "@/lib/config";
-import Link from "next/link";
 
 const field = "w-full min-h-12 rounded-md border border-line bg-bg px-4 text-[15px] focus:border-fg focus:outline-none";
 const labelCls = "text-sm text-fg-2";
@@ -16,14 +16,6 @@ export default function SellForm() {
   const signedIn = ready ? Boolean(user) : null;
   const [photos, setPhotos] = useState([]);
   const [state, setState] = useState({ sending: false, error: "", done: false });
-
-  // bersihkan URL preview foto lama
-  useEffect(() => () => photos.forEach((p) => URL.revokeObjectURL(p.url)), [photos]);
-
-  function pickPhotos(e) {
-    const files = Array.from(e.target.files || []).slice(0, 5);
-    setPhotos(files.map((file) => ({ file, url: URL.createObjectURL(file) })));
-  }
 
   async function submit(e) {
     e.preventDefault();
@@ -39,6 +31,16 @@ export default function SellForm() {
     } catch (err) {
       setState({ sending: false, error: err.status === 401 ? "Your session ended. Sign in again to send it." : err.message, done: false });
     }
+  }
+
+  if (user?.role === "admin") {
+    return (
+      <div className="rounded-2xl border border-line p-8 sm:p-10 flex flex-col items-start gap-4 self-start">
+        <h2 className="font-display text-3xl">This form is for sellers</h2>
+        <p className="text-fg-2 leading-relaxed">Admins review what sellers send from the admin area.</p>
+        <Button href="/admin/consignments">Open submissions</Button>
+      </div>
+    );
   }
 
   if (signedIn === false) {
@@ -58,14 +60,16 @@ export default function SellForm() {
           Got it. <span className="italic">Thank you.</span>
         </h2>
         <p className="text-fg-2 leading-relaxed">
-          We will look at the photos and get back to you within 3 working days, through the contact you left.{" "}
-          <Link href="/pengajuan" className="underline underline-offset-4 hover:text-fg">
-            Track your requests
-          </Link>
+          We will look at the photos and get back to you within 3 working days, through the contact you left.
         </p>
-        <Button variant="secondary" onClick={() => setState({ sending: false, error: "", done: false })}>
-          Send another piece
-        </Button>
+        <div className="flex flex-wrap items-center gap-x-6">
+          <Button variant="secondary" onClick={() => setState({ sending: false, error: "", done: false })}>
+            Send another piece
+          </Button>
+          <Button href="/pengajuan" variant="ghost">
+            See your requests
+          </Button>
+        </div>
       </div>
     );
   }
@@ -139,6 +143,7 @@ export default function SellForm() {
         <textarea
           name="description"
           rows={4}
+          maxLength={600}
           placeholder="Where you got it, how it fits, any marks or repairs"
           className={`${field} py-3 min-h-28`}
         />
@@ -146,18 +151,7 @@ export default function SellForm() {
 
       <div className="flex flex-col gap-3 sm:col-span-2">
         <span className={labelCls}>Photos, up to 5. Front, back, label and any marks.</span>
-        <label className="flex items-center justify-center min-h-24 rounded-md border border-dashed border-line hover:border-fg cursor-pointer text-[15px]">
-          <input name="photos" type="file" accept="image/*" multiple onChange={pickPhotos} className="sr-only" />
-          {photos.length ? `${photos.length} photo${photos.length > 1 ? "s" : ""} picked. Tap to change.` : "Tap to add photos"}
-        </label>
-        {photos.length > 0 && (
-          <div className="flex gap-2 flex-wrap">
-            {photos.map((p) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={p.url} src={p.url} alt="" className="size-20 rounded-md object-cover bg-photo" />
-            ))}
-          </div>
-        )}
+        <PhotoPicker photos={photos} setPhotos={setPhotos} />
       </div>
 
       {state.error && (
@@ -171,9 +165,6 @@ export default function SellForm() {
           {state.sending ? "Sending..." : "Send for review"}
         </Button>
         <span className="text-sm text-fg-2">You keep 80% when it sells.</span>
-        <Link href="/pengajuan" className="text-sm underline underline-offset-4 hover:opacity-70">
-          Your sell requests
-        </Link>
       </div>
     </form>
   );

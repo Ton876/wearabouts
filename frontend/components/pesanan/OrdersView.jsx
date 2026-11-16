@@ -1,105 +1,102 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import ItemPhoto from "@/components/ItemPhoto";
-import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import ItemPhoto from "@/components/ItemPhoto";
+import StatusPill from "@/components/admin/StatusPill";
+import { useLoad } from "@/components/admin/useLoad";
 import PaymentInstructions from "./PaymentInstructions";
 import ReviewForm from "./ReviewForm";
-import { useOrders } from "@/hooks/useOrders";
-import { ORDER_STATUS } from "@/lib/orders";
-import { formatDate } from "@/lib/date";
-import { formatIDR } from "@/lib/format";
+import { api } from "@/lib/api";
+import { formatIDR, itemMeta, orderCode, shortDate } from "@/lib/format";
 
-// keterangan singkat per status, sesuai halaman Help
-const STATUS_NOTE = {
-  paid: "We have your transfer. Your piece ships within 2 working days.",
-  shipped: "Your piece is with the courier.",
-  completed: "Delivered. Enjoy it.",
-  cancelled: "This order was cancelled and the piece is back on the rail.",
+const note = {
+  pending: "Waiting for payment. We hold the piece for 24 hours.",
+  paid: "Payment confirmed. We are packing it.",
+  shipped: "On its way to you.",
+  completed: "Delivered.",
+  cancelled: "This order was cancelled and the piece went back on the rail.",
 };
 
+// GET /orders (pesanan milik sendiri)
 export default function OrdersView() {
-  const { orders, error, loading, reload } = useOrders();
-  const [reviewing, setReviewing] = useState("");
+  const { data, error } = useLoad("/orders/me");
+  const [reviewed, setReviewed] = useState([]);
 
-  if (loading) return <p className="text-fg-2 py-16">Loading...</p>;
-  if (error) return <p className="text-stamp py-16">{error}</p>;
+  // cari pesanan selesai yang sudah punya ulasan (satu ulasan per pesanan)
+  useEffect(() => {
+    if (!data) return;
+    const itemIds = [...new Set(data.filter((o) => o.status === "completed" && o.item).map((o) => o.item._id))];
+    Promise.all(itemIds.map((id) => api(`/reviews/item/${id}`).catch(() => null))).then((all) => {
+      const done = all.flatMap((r) => (r ? r.reviews.map((x) => String(x.order)) : []));
+      setReviewed((prev) => [...new Set([...prev, ...done])]);
+    });
+  }, [data]);
 
-  if (orders.length === 0) {
-    return (
-      <div className="flex flex-col items-start gap-5 py-10">
-        <p className="text-lg text-fg-2">You have not bought anything yet.</p>
-        <Button href="/katalog">Browse the shop</Button>
-      </div>
-    );
-  }
+  if (error) return <p role="alert" className="text-stamp">{error}</p>;
+  if (!data) return <p className="text-fg-2">Loading...</p>;
 
   return (
-    <ul className="flex flex-col gap-6 max-w-3xl">
-      {orders.map((order) => {
-        const status = ORDER_STATUS[order.status] || { label: order.status, variant: "outline" };
-        const item = order.item; // null kalau barangnya sudah dihapus admin
-        const canReview = order.status === "completed" && !order.reviewed;
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+        <h1 className="font-display text-5xl sm:text-6xl leading-[1] tracking-tight">My orders</h1>
+        <Button href="/pengajuan" variant="ghost">
+          Your sell requests
+        </Button>
+      </div>
 
-        return (
-          <li key={order._id} className="flex flex-col gap-5 rounded-2xl border border-line p-5 sm:flex-row">
-            {item && (
-              <Link href={`/barang/${item._id}`} className="group w-28 shrink-0" aria-label={item.name}>
-                <ItemPhoto item={item} sizes="112px" />
-              </Link>
-            )}
+      {data.length === 0 ? (
+        <div className="flex flex-col items-start gap-5 py-6">
+          <p className="text-fg-2 text-lg">You haven&rsquo;t found anything yet.</p>
+          <Button href="/katalog">Browse the rail</Button>
+        </div>
+      ) : (
+        <ul className="flex flex-col">
+          {data.map((o) => {
+            const done = reviewed.includes(o._id);
+            return (
+              <li key={o._id} className="grid gap-5 border-t border-line py-7 sm:grid-cols-[112px_minmax(0,1fr)]">
+                {o.item ? <ItemPhoto item={o.item} className="w-28" sizes="112px" compact /> : <div className="aspect-[4/5] w-28 rounded-lg bg-photo" />}
 
-            <div className="flex flex-1 flex-col gap-3">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs text-fg-2">
-                    Order #{order._id.slice(-6).toUpperCase()} · {formatDate(order.createdAt)}
-                  </p>
-                  {item ? (
-                    <Link href={`/barang/${item._id}`} className="font-display text-2xl hover:opacity-70">
-                      {item.name}
-                    </Link>
-                  ) : (
-                    <span className="font-display text-2xl text-fg-2">This piece is no longer listed</span>
+                <div className="flex flex-col gap-4 min-w-0">
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="font-display text-xl">{orderCode(o)}</span>
+                      <StatusPill status={o.status} />
+                      <span className="text-sm text-fg-2">{shortDate(o.createdAt)}</span>
+                    </div>
+                    {o.item ? (
+                      <Link href={`/barang/${o.item._id}`} className="font-display text-2xl leading-tight hover:opacity-70 transition-opacity">
+                        {o.item.name}
+                      </Link>
+                    ) : (
+                      <p className="font-display text-2xl">Piece removed</p>
+                    )}
+                    {o.item && <p className="text-sm text-fg-2">{itemMeta(o.item)}</p>}
+                    <p>{formatIDR(o.price)}</p>
+                  </div>
+
+                  {o.status === "pending" ? <PaymentInstructions order={o} /> : <p className="text-fg-2">{note[o.status]}</p>}
+
+                  {o.shippingAddress && (
+                    <p className="text-sm text-fg-2 break-words">
+                      Ship to {o.shippingAddress.name}, {o.shippingAddress.address}
+                    </p>
                   )}
+
+                  {o.status === "completed" &&
+                    (done ? (
+                      <p className="text-sm">Thanks, your review is posted.</p>
+                    ) : (
+                      <ReviewForm orderId={o._id} onDone={() => setReviewed((r) => [...r, o._id])} />
+                    ))}
                 </div>
-                <Badge variant={status.variant}>{status.label}</Badge>
-              </div>
-
-              <p className="text-lg">{formatIDR(order.price)}</p>
-
-              {order.status === "pending" && <PaymentInstructions order={order} />}
-              {STATUS_NOTE[order.status] && <p className="text-sm text-fg-2">{STATUS_NOTE[order.status]}</p>}
-
-              {order.shippingAddress && (
-                <p className="text-sm text-fg-2">
-                  Ship to {order.shippingAddress.name}, {order.shippingAddress.address} ({order.shippingAddress.phone})
-                </p>
-              )}
-
-              {order.reviewed && <p className="text-sm text-fg-2">Thanks, your review is up.</p>}
-
-              {canReview &&
-                (reviewing === order._id ? (
-                  <ReviewForm
-                    orderId={order._id}
-                    onCancel={() => setReviewing("")}
-                    onDone={() => {
-                      setReviewing("");
-                      reload();
-                    }}
-                  />
-                ) : (
-                  <Button variant="secondary" className="self-start" onClick={() => setReviewing(order._id)}>
-                    Leave a review
-                  </Button>
-                ))}
-            </div>
-          </li>
-        );
-      })}
-    </ul>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }

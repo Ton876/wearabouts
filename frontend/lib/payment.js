@@ -1,4 +1,5 @@
-// rekening toko untuk transfer manual dan batas waktu bayar (sama dengan halaman Help dan job pembatalan di backend)
+// rekening toko untuk transfer manual. Ganti dengan rekening asli sebelum demo.
+// Batas bayar sama dengan job pembatalan otomatis di backend (24 jam)
 export const PAYMENT_ACCOUNT = {
   bank: "BCA",
   number: "1234567890",
